@@ -30,7 +30,9 @@
 						fileBox.style.display = 'none';
 						this.appendChild(fileBox);
 					}
-					fileBox.onclick = (event) => event.stopPropagation(); // 阻止事件冒泡
+					fileBox.onclick = function(event) {
+						event.stopPropagation(); 
+					}// 阻止事件冒泡
 					fileBox.click(); // 程序触发click事件
 					fileBox.onchange = function() {
 						var files = this.files;
@@ -97,11 +99,10 @@
 				for (var i in files)
 					for (var j in files[i]) 
 						formData.append(options[i].name+i+j, files[i][j]);
+				base.beforeSend();
 				var request = new XMLHttpRequest();
 				request.onreadystatechange = function() {
-					if(request.readyState === 1) {
-						base.beforeSend();
-					}else if(request.readyState === 4) {
+					if(request.readyState === 4) {
 						if (request.status == 200) {
 							base.success(request.responseText);
 						}else{
