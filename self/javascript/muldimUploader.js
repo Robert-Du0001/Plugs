@@ -53,7 +53,7 @@
 										continue; 
 									} // 文件类型不符合，不加入队列
 									if (fileQueue.length >= option.maxNum ) {
-										toption.errorInfo('选择的文件已经达到'+option.maxNum+'个，不再继续添加');
+										option.errorInfo('选择的文件已经达到'+option.maxNum+'个，不再继续添加');
 										break; 
 									} // 超出设置长度，退出循环，此判断用于用户多选时超出范畴
 									files[item].id = builtIn.__createFileId(); // 给文件信息添加id
