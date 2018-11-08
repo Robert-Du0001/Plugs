@@ -18,48 +18,65 @@
 				fileQueue = builtIn.__global.fileQueue[obitem];
 			var regex = option.type && new RegExp(builtIn.__regexFileType(option.type));
 			// 绑定弹出文件选择框事件
-			var picker = document.getElementById(option.pick);
-			if (!picker) throw new Error('指定的文件选择器不存在');
-			picker.onclick = function() {
-				if (option.maxNum > fileQueue.length) {
-					if (!this.getElementsByTagName('input').length) {
-						fileBox	= document.createElement('input');
-						fileBox.type = 'file';
-						fileBox.accept = option.type;
-						fileBox.multiple = option.multiple ? 'multiple' : '';
-						fileBox.style.display = 'none';
-						this.appendChild(fileBox);
-					}
-					fileBox.onclick = function(event) {
-						event.stopPropagation(); 
-					}// 阻止事件冒泡
-					fileBox.click(); // 程序触发click事件
-					fileBox.onchange = function() {
-						var files = this.files;
-						for (var item in files) {
-							if (!isNaN(item)) {
-								if (builtIn.__issetFile(fileQueue, files[item].name)) {
-									option.errorInfo('已经存在相同文件'+files[item].name);
-									continue;
-								} // 存在相同文件，不加入队列
-								if (option.maxSize && files[item].size > option.maxSize) {
-									option.errorInfo('文件'+files[item].name+'尺寸过大');
-									continue;
-								} // 文件尺寸不符合，不加入队列
-								if (regex && !regex.test(files[item].type)) {
-									option.errorInfo('文件'+files[item].name+'类型不符');
-									continue; 
-								} // 文件类型不符合，不加入队列
-								if (fileQueue.length >= option.maxNum ) {
-									throw new Error('文件数量超出设置长度，不再加入队列');
-									break; 
-								} // 超出设置长度，退出循环，此判断用于用户多选时超出范畴
-								files[item].id = builtIn.__createFileId(); // 给文件信息添加id
-								fileQueue.push(files[item]); // 添加文件进入文件队列中
-								option.queue(files[item]); // 触发队列事件	
-							}
+			var pickers = builtIn.__getElement(option.pick);
+			if (!pickers) throw new Error('指定的文件选择器不存在');
+			for(var i in pickers) {
+				pickers[i].onclick = function() {
+					option.click(this);
+					if (option.maxNum > fileQueue.length) {
+						if (!this.getElementsByTagName('input').length) {
+							fileBox	= document.createElement('input');
+							fileBox.type = 'file';
+							fileBox.accept = option.type;
+							fileBox.multiple = option.multiple ? 'multiple' : '';
+							fileBox.style.display = 'none';
+							this.appendChild(fileBox);
 						}
-					}	
+						fileBox.onclick = function(event) {
+							event.stopPropagation(); 
+						}// 阻止事件冒泡
+						fileBox.click(); // 程序触发click事件
+						fileBox.onchange = function() {
+							var files = this.files;
+							for (var item in files) {
+								if (!isNaN(item)) {
+									if (builtIn.__issetFile(fileQueue, files[item].name)) {
+										option.errorInfo('已经存在相同文件'+files[item].name);
+										continue;
+									} // 存在相同文件，不加入队列
+									if (option.maxSize && files[item].size > option.maxSize) {
+										option.errorInfo('文件'+files[item].name+'尺寸过大');
+										continue;
+									} // 文件尺寸不符合，不加入队列
+									if (regex && !regex.test(files[item].type)) {
+										option.errorInfo('文件'+files[item].name+'类型不符');
+										continue; 
+									} // 文件类型不符合，不加入队列
+									if (fileQueue.length >= option.maxNum ) {
+										toption.errorInfo('选择的文件已经达到'+option.maxNum+'个，不再继续添加');
+										break; 
+									} // 超出设置长度，退出循环，此判断用于用户多选时超出范畴
+									files[item].id = builtIn.__createFileId(); // 给文件信息添加id
+									fileQueue.push(files[item]); // 添加文件进入文件队列中
+									option.queue(files[item]); // 触发队列事件	
+								}
+							}
+						}	
+					}else {
+						option.errorInfo('已经选择了'+option.maxNum+'个文件，不能再上传了');
+					}
+				}	
+			}
+		}
+		this.removeFile = function(id) {
+			var files = builtIn.__global.fileQueue;
+			outer:
+			for (var i in files) {
+				for (var j in files[i]) {
+					if (id == files[i][j].id) {
+						files[i].splice(j, 1);
+						break outer; // break 跳出多重循环
+					}
 				}
 			}
 		}
@@ -76,17 +93,8 @@
 	        	delete fr;
 	        }
 		}
-		this.removeFile = function(id) {
-			var files = builtIn.__global.fileQueue;
-			outer:
-			for (var i in files) {
-				for (var j in files[i]) {
-					if (id == files[i][j].id) {
-						files[i].splice(j, 1);
-						break outer; // break 跳出多重循环
-					}
-				}
-			}
+		this.addFormData = function(data) { // 动态添加表单数据
+			Object.assign(this.base.formData, data);
 		}
 		this.uploade = function() {
 			var base = this.base;
@@ -125,16 +133,13 @@
 				throw new Error('没有设置服务器地址');
 			}
 		}
-		this.addFormData = function(data) { // 动态添加表单数据
-			Object.assign(this.base.formData, data);
-		}
 	}
 	// 若不支持FileReader和FormData API 则不创建插件
 	typeof FileReader !== 'undefined' && typeof FormData !== 'undefined' && 
 	(win[builtIn.__info.plug] = factory);
 })(window, {
 	__info: {
-		version: '2.0.1',
+		version: '2.0.2',
 		plug: 'muldimUploader',
 		author: 'Robert Du'
 	},
@@ -160,8 +165,19 @@
 		maxNum: 3,
 		maxSize: '',
 		name: 'file',
+		click: function(el) {},
 		queue: function(f) {},
 		errorInfo: function(i) {}
+	},
+	__getElement: function(name) {
+		var firstStr = name.substr(0,1),
+			needStr = name.substr(1);
+		if (firstStr === '#')
+			return [document.getElementById(needStr)];
+		else if(firstStr === '.')
+			return document.getElementsByClassName(needStr);
+		else
+			throw new Error('没有选择id或类名');
 	},
 	__createFileId: function() { 
 		var id = Math.floor(Math.random()*1000000),
